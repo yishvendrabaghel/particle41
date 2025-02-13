@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-time
+  labels:
+    app: simple-time
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simple-time
+  template:
+    metadata:
+      labels:
+        app: simple-time
+    spec:
+      containers:
+      - name: simple-time
+        image: yishu91/simpletimeservice:{{ .Values.image.tag }}
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-time-service
+spec:
+  type: ClusterIP
+  selector:
+    app: simple-time
+  ports:
+    - protocol: TCP
+      port: 80   # Change this to 80 for Ingress compatibility
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simple-time-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Optional for HTTPS
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: simple-time.local
+    http:
+      paths: 
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: simple-time-service
+            port:
+              number: 80   # Change this to match Service port
